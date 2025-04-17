@@ -12,11 +12,13 @@ const mongoose = require('mongoose');
 //import different routes
 const userRoutes = require('./routes/user')
 const todoRoutes = require('./routes/todo')
+const authRoutes = require('./routes/oAuth')
 
 //request object as a json object
 app.use(express.json())
 
 app.use('/user', userRoutes);
+app.use('/auth', authRoutes);
 app.use('/todo', todoRoutes);
 
 

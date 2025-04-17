@@ -8,7 +8,9 @@ const userSchema = new schema({
     fullname: String,
     username: String,
     email: String,
-    password: String
+    password: String,
+    googleID: String,
+    picture: String
 })
 
 

@@ -101,4 +101,12 @@ router.post("/signin", async (req, res) => {
   }
 });
 
+//route for signout
+router.post("/signout", async (req, res) => {
+  const userToken = req.headers.token;
+});
+
+
+
+
 module.exports = router;
