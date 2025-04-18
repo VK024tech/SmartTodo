@@ -19,8 +19,11 @@ const { getFullMessage } = require("../config/emailFetch");
 //for verifying jwt token
 const { authMiddleware } = require("../middleware/authenticate");
 
-//to register the defined google stretegy 
-require('../config/openAuth')
+//to register the defined google stretegy
+require("../config/openAuth");
+
+//token refresh
+const reload = require("../config/tokenRefresh");
 
 router.get(
   "/google",
@@ -31,6 +34,8 @@ router.get(
       "https://www.googleapis.com/auth/gmail.readonly",
     ],
     session: false,
+    accessType: "offline",
+    prompt: "consent",
   })
 );
 
@@ -49,15 +54,39 @@ router.get(
 );
 
 router.get("/emails", authMiddleware, async (req, res) => {
-  const getUser = await user.findOne({
-    googleID: req.headers.userId,
-  });
+  try {
+    const userID = req.headers.userId;
+    const getUser = await user.findOne({
+      googleID: userID,
+    });
 
-  const accessToken = getUser.accessToken;
-  const messages = await getFullMessage(accessToken);
-  // const decode = Buffer.from(messages, 'base64').toString('utf-8')
-  // console.log(messages)
-  res.json(messages);
+    const accessToken = getUser.accessToken;
+    const messages = await getFullMessage(accessToken);
+
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({
+      error: error,
+    });
+  }
+});
+
+router.get("/refreshToken", authMiddleware, async (req, res) => {
+  try {
+    const userID = req.headers.userId;
+    const getUser = await user.findOne({
+      googleID: userID,
+    });
+
+    const newtoken = await reload.refreshToken(getUser.refreshToken, userID);
+    console.log(newtoken);
+
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({
+      error: error,
+    });
+  }
 });
 
 module.exports = router;
