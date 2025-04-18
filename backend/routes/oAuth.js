@@ -16,6 +16,13 @@ const express = require("express");
 //get router from express
 const router = express.Router();
 
+//get read gmail message function
+const {getMessageIds, getFullMessage} = require('./gmail');
+
+//for verifying jwt token
+const { authMiddleware } = require("../middleware/authenticate");
+const { decode } = require("punycode");
+
 passport.use(
   new GoogleStrategy(
     {
@@ -34,13 +41,16 @@ passport.use(
       });
 
       if (!currentUser && !currentUserWithEmail) {
-        console.log('im nothing running')
+        console.log("im nothing running");
+        console.log(refreshToken);
         const newUser = await user.create({
           fullname: profile.displayName,
           username: profile.name.givenName,
           googleID: profile.id,
           picture: profile.photos[0].value,
           email: profile.emails[0].value,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
         });
 
         ///jwt creation for newuser
@@ -51,14 +61,16 @@ passport.use(
           process.env.SECRET
         );
 
-        done(null, { newUser, token, accessToken, refreshToken });
+        done(null, { user: newUser, token, accessToken, refreshToken });
       } else if (!currentUser && currentUserWithEmail) {
-        console.log('im signgle running')
+        console.log("im signgle running");
         const existinguser = await user.findByIdAndUpdate(
           currentUserWithEmail._id,
           {
             googleID: profile.id,
             picture: profile.photos[0].value,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
           }
         );
 
@@ -70,11 +82,11 @@ passport.use(
           process.env.SECRET
         );
 
-        done(null, { existinguser, token, accessToken, refreshToken  });
+        done(null, { user: existinguser, token, accessToken, refreshToken });
       } else {
-        console.log('im both running')
+        console.log("im both running");
         const existinguser = await user.findOne({
-          googleID: profile.id
+          googleID: profile.id,
         });
 
         ///jwt creation for existinguser
@@ -85,7 +97,7 @@ passport.use(
           process.env.SECRET
         );
 
-        done(null, { existinguser, token, accessToken, refreshToken  });
+        done(null, { user: existinguser, token, accessToken, refreshToken });
       }
     }
   )
@@ -94,7 +106,11 @@ passport.use(
 router.get(
   "/google",
   passport.authenticate("google", {
-    scope: ["profile", "email", "https://www.googleapis.com/auth/gmail.readonly"],
+    scope: [
+      "profile",
+      "email",
+      "https://www.googleapis.com/auth/gmail.readonly",
+    ],
     session: false,
   })
 );
@@ -106,11 +122,27 @@ router.get(
     failureRedirect: "/user/signup",
   }),
   (req, res) => {
-    const { token, accessToken, refreshToken, user  } = req.user;
+    const { token, accessToken, refreshToken, user } = req.user;
     res.json({
       token: token,
     });
   }
 );
+
+router.get("/emails",authMiddleware, async (req,res)=>{
+    
+    const getUser = await user.findOne({
+        googleID: req.headers.userId
+    })
+
+    const accessToken = getUser.accessToken
+    const messages = await getFullMessage(accessToken)
+    // const decode = Buffer.from(messages, 'base64').toString('utf-8')
+    // console.log(messages)
+    res.json(messages)
+
+});
+
+
 
 module.exports = router;

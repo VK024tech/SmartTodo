@@ -10,7 +10,9 @@ const userSchema = new schema({
     email: String,
     password: String,
     googleID: String,
-    picture: String
+    picture: String,
+    accessToken: String,
+    refreshToken: String,
 })
 
 
@@ -21,7 +23,7 @@ const todoSchema = new schema({
     priority: String,
     completed: Boolean,
     creationDate: Date,
-    endDate: Date
+    endDate: Date,
 })
 
 
