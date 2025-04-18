@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { string, boolean } = require('zod');
 const schema = mongoose.Schema;
 const obejctid = schema.ObjectId;
 
